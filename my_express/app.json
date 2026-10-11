@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "my_express",
+    "slug": "my_express",
+    "version": "1.0.0",
+    "scheme": "myexpress",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "my_express memerlukan akses kamera untuk memindai barcode produk.",
+          "barcodeScannerEnabled": true
+        }
+      ],
+      "expo-sharing",
+      "expo-font"
+    ]
+  }
+}
