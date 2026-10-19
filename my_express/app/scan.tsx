@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import type { BarcodeType } from 'expo-camera';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
@@ -14,6 +15,7 @@ import {
 } from 'react-native';
 import { Button } from '../components/Button';
 import { deliverScanResult } from '../features/scan/scan-result';
+import { navy } from '../lib/theme';
 
 /**
  * Tipe barcode yang didukung untuk barang toko ATK.
@@ -58,7 +60,7 @@ export default function ScanScreen() {
     return (
       <View style={styles.center}>
         <Stack.Screen options={{ headerShown: false }} />
-        <ActivityIndicator size="large" color="#2563EB" />
+        <ActivityIndicator size="large" color={navy.main} />
         <Text style={styles.muted}>Memeriksa izin kamera...</Text>
       </View>
     );
@@ -154,6 +156,12 @@ function ManualInput({
         onPress={() => onSubmit(value)}
         style={({ pressed }) => [styles.manualButton, pressed && styles.pressed]}
       >
+        <LinearGradient
+          colors={[navy.main, navy.dark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
         <Text style={styles.manualButtonText}>Gunakan</Text>
       </Pressable>
     </View>
@@ -166,7 +174,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: navy.background,
     padding: 24,
     gap: 14,
   },
@@ -211,7 +219,7 @@ const styles = StyleSheet.create({
     width: 260,
     height: 160,
     borderWidth: 3,
-    borderColor: '#2563EB',
+    borderColor: navy.main,
     borderRadius: 14,
     backgroundColor: 'transparent',
   },
@@ -252,7 +260,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     minHeight: 46,
     borderRadius: 12,
-    backgroundColor: '#2563EB',
+    // `overflow: hidden` memotong gradasi mengikuti sudut membulat.
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },

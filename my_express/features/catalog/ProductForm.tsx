@@ -2,7 +2,10 @@ import { Controller, useForm } from 'react-hook-form';
 import { View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
+import { PickOrTypeField } from '../../components/PickOrTypeField';
+import { LABEL_KETIK_SENDIRI, SATUAN_MAKSIMAL, daftarSatuan } from '../../lib/satuan';
 import { ScanButton } from '../scan/ScanButton';
+import { useCategories } from './queries';
 import {
   productFormSchema,
   type ProductFormValues,
@@ -23,6 +26,7 @@ export const EMPTY_PRODUCT_VALUES: ProductFormValues = {
   barcode: '',
   name: '',
   category: '',
+  satuan: '',
   price: '',
   stock: '0',
   minStock: '0',
@@ -36,6 +40,9 @@ export function ProductForm({ defaultValues, submitLabel, onSubmit, submitting }
   const form = useForm<ProductFormValues>({
     defaultValues: defaultValues ?? EMPTY_PRODUCT_VALUES,
   });
+
+  // Kategori yang sudah pernah dipakai, supaya tidak perlu diketik ulang.
+  const { data: kategori } = useCategories();
 
   const handleSubmit = (values: ProductFormValues) => {
     const result = productFormSchema.safeParse(values);
@@ -88,14 +95,33 @@ export function ProductForm({ defaultValues, submitLabel, onSubmit, submitting }
       <Controller
         control={form.control}
         name="category"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <Input
+        render={({ field: { onChange, value } }) => (
+          <PickOrTypeField
             label="Kategori"
             value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
+            options={kategori ?? []}
             placeholder="Contoh: Alat Tulis"
+            customLabel={LABEL_KETIK_SENDIRI}
+            maxLength={50}
             error={form.formState.errors.category?.message}
+            onChange={onChange}
+          />
+        )}
+      />
+      <Controller
+        control={form.control}
+        name="satuan"
+        render={({ field: { onChange, value } }) => (
+          <PickOrTypeField
+            label="Satuan"
+            value={value}
+            options={daftarSatuan()}
+            placeholder="Contoh: rim"
+            customLabel={LABEL_KETIK_SENDIRI}
+            maxLength={SATUAN_MAKSIMAL}
+            autoCapitalize="none"
+            error={form.formState.errors.satuan?.message}
+            onChange={onChange}
           />
         )}
       />

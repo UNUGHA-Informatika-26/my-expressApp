@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, Tabs } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   Alert,
@@ -17,9 +18,11 @@ import { ProductCard } from '../../features/catalog/ProductCard';
 import { getProductByBarcode } from '../../features/catalog/api';
 import { useCategories, useProducts } from '../../features/catalog/queries';
 import { ScanButton } from '../../features/scan/ScanButton';
+import { TabHeaderTitle } from '../../features/tabs/TabHeaderTitle';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { getErrorMessage, isNotFound } from '../../lib/api';
 import { formatRupiah } from '../../lib/format';
+import { navy } from '../../lib/theme';
 import { countCart, totalCart, useCartStore } from '../../store/cart';
 import type { Product, StockStatus } from '../../types/api';
 
@@ -109,8 +112,27 @@ export default function KatalogScreen() {
       });
   };
 
+  const adaFilter = Boolean(search.trim() || category || stock);
+
   return (
     <View style={styles.container}>
+      <Tabs.Screen
+        options={{
+          headerTitle: () => (
+            <TabHeaderTitle
+              title="Katalog"
+              // Respons daftar produk tidak membawa jumlah total, jadi saat
+              // filter aktif hanya jumlah yang tampil yang bisa disebut —
+              // menyebut "dari 24" berarti meminta ulang seluruh katalog.
+              subtitle={
+                adaFilter
+                  ? `${products.length} produk ditampilkan`
+                  : `${products.length} produk`
+              }
+            />
+          ),
+        }}
+      />
       <View style={styles.toolbar}>
         <TextInput
           style={styles.search}
@@ -203,6 +225,13 @@ export default function KatalogScreen() {
         onPress={openNewProduct}
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
       >
+        {/* Gradasi yang sama dengan kartu penjualan di Beranda. */}
+        <LinearGradient
+          colors={[navy.main, navy.dark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
         <Ionicons name="add" size={30} color="#FFFFFF" />
       </Pressable>
     </View>
@@ -228,13 +257,22 @@ function Chip({
         pressed && styles.chipPressed,
       ]}
     >
+      {/* Gradasi hanya dipasang saat aktif; chip nonaktif tetap berlatar putih. */}
+      {active && (
+        <LinearGradient
+          colors={[navy.main, navy.dark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: navy.background },
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -266,7 +304,12 @@ const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
   },
-  chipActive: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
+  chipActive: {
+    // Latar chip aktif kini gradasi; `overflow: hidden` memotongnya
+    // mengikuti sudut membulat.
+    borderColor: navy.main,
+    overflow: 'hidden',
+  },
   chipPressed: { opacity: 0.7 },
   chipText: { fontSize: 13, color: '#374151', fontWeight: '600' },
   chipTextActive: { color: '#FFFFFF' },
@@ -283,7 +326,8 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2563EB',
+    // `overflow: hidden` memotong gradasi mengikuti sudut membulat.
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,

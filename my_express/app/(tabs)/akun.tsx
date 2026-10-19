@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
@@ -23,9 +23,9 @@ import {
   type UpdateProfileValues,
 } from '../../features/auth/validation';
 import { NotificationSettings } from '../../features/notifications/NotificationSettings';
-import { ReportDownload } from '../../features/reports/ReportDownload';
+import { TabHeaderTitle } from '../../features/tabs/TabHeaderTitle';
 import { getErrorMessage } from '../../lib/api';
-import { text } from '../../lib/theme';
+import { navy, text } from '../../lib/theme';
 import { useAuthStore } from '../../store/auth';
 
 export default function AkunScreen() {
@@ -133,6 +133,18 @@ export default function AkunScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <Tabs.Screen
+        options={{
+          headerTitle: () => (
+            <TabHeaderTitle
+              title="Akun"
+              // Nama toko tidak pernah diisi saat pendaftaran, jadi nama
+              // pemilik dipakai sebagai cadangan agar barisnya tidak kosong.
+              subtitle={user?.storeName || user?.name || 'Akun'}
+            />
+          ),
+        }}
+      />
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <Card>
           <Text style={text.cardTitle}>Profil</Text>
@@ -221,7 +233,6 @@ export default function AkunScreen() {
         </Card>
 
         <NotificationSettings />
-        <ReportDownload />
 
         <Button label="Keluar" onPress={onLogout} variant="danger" />
       </ScrollView>
@@ -239,8 +250,8 @@ function Field({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#F9FAFB' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB', padding: 24, gap: 16 },
+  flex: { flex: 1, backgroundColor: navy.background },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: navy.background, padding: 24, gap: 16 },
   container: { padding: 16 },
   field: { marginBottom: 16 },
   fieldLabel: { fontSize: 13, color: '#6B7280', marginBottom: 4 },

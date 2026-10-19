@@ -7,8 +7,8 @@ import { z } from 'zod';
  */
 export const paymentSchema = z
   .object({
-    paymentMethod: z.enum(['tunai', 'qris', 'transfer'], {
-      message: 'Metode bayar harus Tunai, QRIS, atau Transfer',
+    paymentMethod: z.enum(['tunai', 'qris'], {
+      message: 'Metode bayar harus Tunai atau QRIS',
     }),
     /** Teks dari TextInput; dikirim sebagai angka setelah lolos validasi. */
     amountReceived: z.string().optional(),
@@ -36,13 +36,13 @@ export const paymentSchema = z
 
 /** Nilai form pembayaran (semuanya teks karena berasal dari TextInput). */
 export type PaymentFormValues = {
-  paymentMethod: 'tunai' | 'qris' | 'transfer';
+  paymentMethod: 'tunai' | 'qris';
   amountReceived: string;
 };
 
 /** Payload siap kirim ke backend setelah lolos validasi. */
 export interface CheckoutPayload {
-  paymentMethod: 'tunai' | 'qris' | 'transfer';
+  paymentMethod: 'tunai' | 'qris';
   amountReceived?: number;
   items: { productId: string; quantity: number }[];
 }

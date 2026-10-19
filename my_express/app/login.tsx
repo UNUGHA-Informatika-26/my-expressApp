@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-import { Link, router } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
+import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../components/Button';
@@ -7,14 +8,30 @@ import { Input } from '../components/Input';
 import { login } from '../features/auth/api';
 import { loginSchema, type LoginValues } from '../features/auth/validation';
 import { getErrorMessage } from '../lib/api';
+import { navy } from '../lib/theme';
 import { useAuthStore } from '../store/auth';
 
 export default function LoginScreen() {
   const setSession = useAuthStore((state) => state.setSession);
 
+  // Email yang baru didaftarkan di Layar Daftar, dilewatkan sebagai parameter rute.
+  const { email } = useLocalSearchParams<{ email?: string }>();
+
   const form = useForm<LoginValues>({
     defaultValues: { email: '', password: '' },
   });
+  const { setValue, getValues } = form;
+
+  // `defaultValues` tidak dipakai untuk menerima email itu: Layar Login sudah
+  // ter-mount jauh sebelum pengguna menekan tombol Daftar, jadi nilai awal
+  // tidak pernah dibaca ulang. Param rute yang berubah itulah pemicunya.
+  useEffect(() => {
+    // Ditulis hanya bila nilainya berbeda, supaya efek ini idempoten dan tidak
+    // pernah menimbulkan render ulang yang tak berujung.
+    if (email && getValues('email') !== email) {
+      setValue('email', email);
+    }
+  }, [email, setValue, getValues]);
 
   const loginMutation = useMutation({
     mutationFn: login,
@@ -106,13 +123,13 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#F9FAFB' },
+  flex: { flex: 1, backgroundColor: navy.background },
   container: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   header: { marginBottom: 32 },
-  title: { fontSize: 32, fontWeight: '800', color: '#2563EB' },
+  title: { fontSize: 32, fontWeight: '800', color: navy.main },
   subtitle: { fontSize: 16, color: '#6B7280', marginTop: 8 },
   hint: { fontSize: 13, color: '#9CA3AF', textAlign: 'center', marginTop: 16 },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   footerText: { fontSize: 15, color: '#6B7280' },
-  footerLink: { fontSize: 15, color: '#2563EB', fontWeight: '600' },
+  footerLink: { fontSize: 15, color: navy.main, fontWeight: '600' },
 });

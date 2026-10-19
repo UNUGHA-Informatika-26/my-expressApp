@@ -34,6 +34,11 @@ export function formatWeekday(isoDate: string): string {
   return dayjs(isoDate).locale('id').format('ddd');
 }
 
+/** Tanggal pada kepala beranda, contoh: "Jumat, 2 Oktober" (tanpa tahun). */
+export function formatHeadlineDate(): string {
+  return dayjs().locale('id').format('dddd, D MMMM');
+}
+
 /** Tanggal ringkas untuk judul kartu, contoh: "10 Okt 2026". */
 export function formatShortDate(isoDate: string): string {
   return dayjs(isoDate).locale('id').format('D MMM YYYY');

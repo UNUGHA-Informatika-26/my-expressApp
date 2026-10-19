@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { formatDateTime, formatShortDate } from '../../lib/date';
 import { formatRupiah } from '../../lib/format';
+import { navy } from '../../lib/theme';
 import type { NotificationItem, NotificationType } from '../../types/api';
 
 /** Tampilan tiap jenis peringatan: ikon, warna, dan latar bulatan. */
@@ -12,7 +13,7 @@ const PRESENTATION: Record<
 > = {
   stok_habis: { icon: 'alert-circle', color: '#DC2626', background: '#FEE2E2' },
   stok_menipis: { icon: 'warning', color: '#D97706', background: '#FEF3C7' },
-  hutang_jatuh_tempo: { icon: 'time', color: '#2563EB', background: '#DBEAFE' },
+  hutang_jatuh_tempo: { icon: 'time', color: navy.main, background: '#DBEAFE' },
 };
 
 /** Satu baris peringatan pada layar Notifikasi. */

@@ -67,6 +67,7 @@ export const useCartStore = create<CartState>()((set) => ({
             price: product.price,
             quantity: 1,
             stock: product.stock,
+            satuan: product.satuan,
           },
         ],
       };

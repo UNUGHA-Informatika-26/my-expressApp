@@ -1,12 +1,37 @@
 import axios from 'axios';
+import Constants from 'expo-constants';
 import { useAuthStore } from '../store/auth';
 
 /**
- * Instance axios untuk memanggil backend my_express_api.
- * Base URL diambil dari EXPO_PUBLIC_API_URL (lihat .env).
+ * Menentukan alamat backend. Semua pemanggilan API memakai hasil dari
+ * fungsi ini — tidak ada alamat yang ditulis langsung di file lain.
+ *
+ * Urutan:
+ * 1. EXPO_PUBLIC_API_URL dari .env, bila diisi (diprioritaskan).
+ * 2. IP dari hostUri Metro. Bagian sebelum tanda titik dua adalah IP
+ *    laptop, jadi alamat ikut mengikuti tanpa perlu mengubah .env tiap
+ *    kali IP laptop berganti.
  */
+function resolveBaseUrl(): string {
+  const fromEnv = process.env.EXPO_PUBLIC_API_URL;
+  if (fromEnv) {
+    return fromEnv;
+  }
+
+  const hostUri = Constants.expoConfig?.hostUri;
+  const host = hostUri?.split(':')[0];
+  if (host) {
+    return `http://${host}:3000`;
+  }
+
+  throw new Error(
+    'Alamat backend belum bisa ditentukan. Isi EXPO_PUBLIC_API_URL di file .env.',
+  );
+}
+
+/** Instance axios untuk memanggil backend my_express_api. */
 export const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL,
+  baseURL: resolveBaseUrl(),
   timeout: 15000,
 });
 

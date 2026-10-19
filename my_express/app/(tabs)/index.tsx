@@ -1,18 +1,25 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import { SalesChart } from '../../features/dashboard/SalesChart';
-import { useDashboard } from '../../features/dashboard/queries';
 import { StockBadge } from '../../features/catalog/StockBadge';
 import { DebtWarning } from '../../features/debt/DebtWarning';
+import { useDashboard } from '../../features/dashboard/queries';
+import { NotificationBell } from '../../features/notifications/NotificationBell';
 import { getErrorMessage } from '../../lib/api';
-import { formatClock } from '../../lib/date';
+import { formatClock, formatHeadlineDate, formatWeekday } from '../../lib/date';
 import { formatRupiah } from '../../lib/format';
-import type { DashboardSummary, TransactionSummary } from '../../types/api';
+import { home, navy, opacity, spacing } from '../../lib/theme';
+import { useAuthStore } from '../../store/auth';
+import type { DashboardSummary } from '../../types/api';
 
 const METHOD_LABEL = { tunai: 'Tunai', qris: 'QRIS', transfer: 'Transfer' } as const;
+
+/** Jumlah baris restok dan transaksi terakhir yang ditampilkan di beranda. */
+const MAKS_BARIS = 3;
 
 export default function BerandaScreen() {
   const dashboardQuery = useDashboard();
@@ -38,200 +45,414 @@ export default function BerandaScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <SalesSummary data={data} />
-      <DebtWarning dueDebts={data.dueDebts} />
-      <ChartSection data={data} />
-      <RestockSection data={data} />
-      <RecentSection data={data} />
-    </ScrollView>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Header data={data} />
+        <SalesCard data={data} />
+        <StatRow data={data} />
+        <StartTransactionButton />
+        <DebtWarning dueDebts={data.dueDebts} />
+        <RestockSection data={data} />
+        <RecentSection data={data} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-/** Penjualan hari ini beserta pembanding kemarin dan dua angka pendukung. */
-function SalesSummary({ data }: { data: DashboardSummary }) {
-  const delta = data.todaySales - data.yesterdaySales;
+/** Kepala beranda: tanggal, sapaan, nama toko, dan lonceng. */
+function Header({ data }: { data: DashboardSummary }) {
+  // Nama dan nama toko diambil dari sesi login, sehingga ikut berubah
+  // saat profil diedit di layar Akun.
+  const name = useAuthStore((s) => s.user?.name);
+  const storeName = useAuthStore((s) => s.user?.storeName);
+
+  // Angka lonceng: seluruh peringatan stok dan hutang yang perlu diperhatikan.
+  const peringatan =
+    data.lowStockCount + data.dueDebts.overdueCount + data.dueDebts.dueIn7DaysCount;
 
   return (
-    <Card>
-      <Text style={styles.label}>Penjualan hari ini</Text>
-      <Text style={styles.bigNumber}>{formatRupiah(data.todaySales)}</Text>
-
-      <View style={styles.compareRow}>
-        <Text style={styles.compareLabel}>
-          Kemarin {formatRupiah(data.yesterdaySales)}
-        </Text>
-        {delta !== 0 && (
-          <Text style={[styles.delta, delta > 0 ? styles.deltaUp : styles.deltaDown]}>
-            {delta > 0 ? '+' : ''}
-            {formatRupiah(delta)}
-          </Text>
-        )}
+    <View style={styles.header}>
+      <View style={styles.headerText}>
+        <Text style={styles.date}>{formatHeadlineDate()}</Text>
+        <Text style={styles.greeting}>{name ? `Halo, ${name} 👋` : 'Halo 👋'}</Text>
+        {/* Nama toko tidak pernah diisi saat pendaftaran, jadi barisnya hanya
+            dirender bila sudah diisi di layar Akun — supaya tidak menyisakan
+            ruang kosong pada kepala. */}
+        {storeName ? <Text style={styles.storeName}>{storeName}</Text> : null}
       </View>
-
-      <View style={styles.statsRow}>
-        <StatBox icon="receipt-outline" value={String(data.transactionCount)} label="Transaksi" />
-        <StatBox icon="cube-outline" value={String(data.itemsSold)} label="Barang terjual" />
-      </View>
-    </Card>
-  );
-}
-
-function ChartSection({ data }: { data: DashboardSummary }) {
-  return <SalesChart data={data.chart7Days} />;
-}
-
-/** Produk yang stoknya menipis atau habis, plus jalan pintas ke Katalog. */
-function RestockSection({ data }: { data: DashboardSummary }) {
-  return (
-    <Card>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Stok perlu restok</Text>
-        {data.lowStockCount > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{data.lowStockCount}</Text>
-          </View>
-        )}
-      </View>
-
-      {data.lowStockCount === 0 ? (
-        <Text style={styles.mutedLeft}>Semua stok masih aman.</Text>
-      ) : (
-        <>
-          {data.restockItems.map((item) => (
-            <View key={item.id} style={styles.restockRow}>
-              <View style={styles.restockInfo}>
-                <Text style={styles.restockName} numberOfLines={1}>
-                  {item.name}
-                </Text>
-                <Text style={styles.restockMeta}>
-                  Stok {item.stock} · min. {item.minStock}
-                </Text>
-              </View>
-              <StockBadge status={item.stockStatus} />
-            </View>
-          ))}
-
-          <View style={styles.sectionFooter}>
-            <Button
-              label="Lihat semua di Katalog"
-              onPress={() => router.push('/(tabs)/katalog')}
-            />
-          </View>
-        </>
-      )}
-    </Card>
-  );
-}
-
-/** Lima transaksi terakhir. */
-function RecentSection({ data }: { data: DashboardSummary }) {
-  return (
-    <Card>
-      <Text style={styles.sectionTitle}>Transaksi terakhir</Text>
-
-      {data.recentTransactions.length === 0 ? (
-        <Text style={styles.mutedLeft}>Belum ada transaksi.</Text>
-      ) : (
-        data.recentTransactions.map((transaction) => (
-          <RecentRow key={transaction.id} transaction={transaction} />
-        ))
-      )}
-    </Card>
-  );
-}
-
-function RecentRow({ transaction }: { transaction: TransactionSummary }) {
-  return (
-    <View style={styles.recentRow}>
-      <View style={styles.restockInfo}>
-        <Text style={styles.restockName}>{transaction.code}</Text>
-        <Text style={styles.restockMeta}>
-          {formatClock(transaction.createdAt)} · {METHOD_LABEL[transaction.paymentMethod]}
-        </Text>
-      </View>
-      <Text style={styles.recentTotal}>{formatRupiah(transaction.total)}</Text>
+      <NotificationBell count={peringatan} />
     </View>
   );
 }
 
-function StatBox({
-  icon,
-  value,
-  label,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  value: string;
-  label: string;
-}) {
+/** Kartu penjualan hari ini: angka besar, pil perbandingan, dan grafik 7 batang. */
+function SalesCard({ data }: { data: DashboardSummary }) {
+  const delta = data.todaySales - data.yesterdaySales;
+  const persen =
+    data.yesterdaySales > 0 ? (delta / data.yesterdaySales) * 100 : null;
+
   return (
-    <View style={styles.statBox}>
-      <Ionicons name={icon} size={18} color="#2563EB" />
+    <LinearGradient
+      colors={[navy.main, navy.dark]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.salesCard}
+    >
+      <Text style={styles.salesLabel}>Penjualan hari ini</Text>
+      <Text style={styles.salesAmount}>{formatRupiah(data.todaySales)}</Text>
+
+      {persen !== null && delta !== 0 && (
+        <View style={styles.pill}>
+          <Text style={styles.pillText}>
+            {delta > 0 ? '▲' : '▼'} {Math.abs(persen).toFixed(1).replace('.', ',')}% dari
+            kemarin
+          </Text>
+        </View>
+      )}
+
+      <SalesBars data={data} />
+    </LinearGradient>
+  );
+}
+
+/**
+ * Grafik 7 batang rata bawah, dibuat dari View biasa sesuai desain.
+ * Batang terakhir (hari ini) putih solid, sisanya putih transparan.
+ */
+function SalesBars({ data }: { data: DashboardSummary }) {
+  const puncak = Math.max(...data.chart7Days.map((point) => point.total), 0);
+
+  return (
+    <View style={styles.chart}>
+      {data.chart7Days.map((point, index) => {
+        const terakhir = index === data.chart7Days.length - 1;
+        // Nilai nol tetap diberi batang tipis agar hari itu terlihat ada.
+        const tinggi =
+          puncak > 0
+            ? Math.max(home.spacing.barMinHeight, (point.total / puncak) * home.spacing.barMaxHeight)
+            : home.spacing.barMinHeight;
+
+        return (
+          <View key={point.date} style={styles.column}>
+            <View
+              style={[
+                styles.bar,
+                {
+                  height: tinggi,
+                  backgroundColor: terakhir ? home.colors.surface : home.colors.onNavySoft,
+                },
+              ]}
+            />
+            <Text style={styles.dayLabel}>{formatWeekday(point.date).charAt(0)}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Tiga kartu statistik sejajar. */
+function StatRow({ data }: { data: DashboardSummary }) {
+  return (
+    <View style={styles.statRow}>
+      <StatCard value={data.transactionCount} label="Transaksi" />
+      <StatCard value={data.itemsSold} label="Item terjual" />
+      <StatCard value={data.lowStockCount} label="Stok menipis" />
+    </View>
+  );
+}
+
+function StatCard({ value, label }: { value: number; label: string }) {
+  return (
+    <View style={styles.statCard}>
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
 
+/** Tombol menuju layar Kasir. */
+function StartTransactionButton() {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Mulai transaksi baru"
+      onPress={() => router.push('/(tabs)/kasir')}
+      style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+    >
+      <Text style={styles.ctaText}>Mulai transaksi baru</Text>
+      <View style={styles.ctaCircle}>
+        <Feather name="plus" size={20} color={navy.dark} />
+      </View>
+    </Pressable>
+  );
+}
+
+/** Produk yang stoknya menipis atau habis, paling banyak tiga baris. */
+function RestockSection({ data }: { data: DashboardSummary }) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Perlu restok</Text>
+
+      {data.lowStockCount === 0 ? (
+        <Card style={styles.listCard} spaced={false}>
+          <Text style={styles.empty}>Semua stok masih aman.</Text>
+        </Card>
+      ) : (
+        <Card style={styles.listCard} spaced={false}>
+          {data.restockItems.slice(0, MAKS_BARIS).map((item, index) => (
+            <View
+              key={item.id}
+              style={[styles.row, index > 0 && styles.rowDivider]}
+            >
+              <Text style={styles.rowTitle} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <StockBadge status={item.stockStatus} sisa={item.stock} />
+            </View>
+          ))}
+        </Card>
+      )}
+    </View>
+  );
+}
+
+/** Tiga transaksi terakhir beserta jalan pintas ke tab Laporan. */
+function RecentSection({ data }: { data: DashboardSummary }) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Transaksi terakhir</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Lihat semua transaksi"
+          hitSlop={8}
+          onPress={() => router.push('/(tabs)/laporan')}
+        >
+          <Text style={styles.link}>Lihat semua</Text>
+        </Pressable>
+      </View>
+
+      <Card style={styles.listCard} spaced={false}>
+        {data.recentTransactions.length === 0 ? (
+          <Text style={styles.empty}>Belum ada transaksi.</Text>
+        ) : (
+          data.recentTransactions
+            .slice(0, MAKS_BARIS)
+            .map((transaction, index) => (
+              <View
+                key={transaction.id}
+                style={[styles.row, index > 0 && styles.rowDivider]}
+              >
+                <View style={styles.rowInfo}>
+                  <Text style={styles.rowTitle}>{transaction.code}</Text>
+                  <Text style={styles.rowMeta}>
+                    {formatClock(transaction.createdAt)} ·{' '}
+                    {METHOD_LABEL[transaction.paymentMethod]}
+                  </Text>
+                </View>
+                <Text style={styles.rowTotal}>
+                  {formatRupiah(transaction.total)}
+                </Text>
+              </View>
+            ))
+        )}
+      </Card>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16, backgroundColor: '#F9FAFB' },
-  content: { padding: 16, paddingBottom: 32 },
-  muted: { fontSize: 15, color: '#6B7280', textAlign: 'center' },
-  mutedLeft: { fontSize: 14, color: '#6B7280', marginTop: 8 },
-  errorText: { fontSize: 15, color: '#DC2626', textAlign: 'center' },
-  label: { fontSize: 14, color: '#6B7280' },
-  bigNumber: { fontSize: 30, fontWeight: '800', color: '#111827', marginTop: 4 },
-  compareRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
-  compareLabel: { fontSize: 14, color: '#6B7280', flex: 1 },
-  delta: { fontSize: 14, fontWeight: '700' },
-  deltaUp: { color: '#059669' },
-  deltaDown: { color: '#DC2626' },
-  statsRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  statBox: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    gap: 2,
-    backgroundColor: '#F9FAFB',
+  screen: { flex: 1, backgroundColor: navy.background },
+  // Padding bawah ditambah agar konten terakhir tidak tertutup tab bar.
+  content: {
+    padding: home.spacing.screenPadding,
+    paddingBottom: home.spacing.bottomPadding,
+    gap: home.spacing.blockGap,
   },
-  statValue: { fontSize: 20, fontWeight: '800', color: '#111827' },
-  statLabel: { fontSize: 12, color: '#6B7280' },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { flex: 1, fontSize: 15, fontWeight: '700', color: '#111827' },
-  badge: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
-    paddingHorizontal: 7,
-    backgroundColor: '#DC2626',
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: home.spacing.screenPadding,
+    gap: home.spacing.blockGap,
+    backgroundColor: navy.background,
+  },
+  muted: {
+    fontFamily: home.fontFamily.semibold,
+    fontSize: home.fontSize.body,
+    color: navy.textSecondary,
+    textAlign: 'center',
+  },
+  errorText: {
+    fontFamily: home.fontFamily.semibold,
+    fontSize: home.fontSize.body,
+    color: home.colors.habisText,
+    textAlign: 'center',
+  },
+
+  // --- Kepala ---
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  headerText: { flex: 1 },
+  date: {
+    fontFamily: home.fontFamily.semibold,
+    fontSize: home.fontSize.caption,
+    color: navy.textSecondary,
+  },
+  greeting: {
+    marginTop: home.spacing.dateGap,
+    fontFamily: home.fontFamily.extraBold,
+    fontSize: home.fontSize.greeting,
+    color: navy.dark,
+  },
+  storeName: {
+    marginTop: home.spacing.storeGap,
+    fontFamily: home.fontFamily.semibold,
+    fontSize: home.fontSize.body,
+    color: navy.textSecondary,
+  },
+
+  // --- Kartu penjualan ---
+  salesCard: {
+    borderRadius: home.radius.sales,
+    padding: home.spacing.salesPadding,
+    gap: home.spacing.salesGap,
+    ...home.shadow,
+  },
+  salesLabel: {
+    fontFamily: home.fontFamily.semibold,
+    fontSize: home.fontSize.caption,
+    color: home.colors.onNavyMuted,
+  },
+  salesAmount: {
+    fontFamily: home.fontFamily.extraBold,
+    fontSize: home.fontSize.amount,
+    color: home.colors.surface,
+  },
+  pill: {
+    alignSelf: 'flex-start',
+    marginTop: home.spacing.pillGap,
+    height: home.spacing.pillHeight,
+    paddingHorizontal: home.spacing.pillPadding,
+    borderRadius: home.radius.pill,
+    backgroundColor: home.colors.pillBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
-  restockRow: {
+  pillText: {
+    fontFamily: home.fontFamily.bold,
+    fontSize: home.fontSize.micro,
+    color: home.colors.surface,
+  },
+  chart: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: home.spacing.barGap,
+    marginTop: home.spacing.chartGap,
+  },
+  column: { flex: 1, alignItems: 'center', gap: home.spacing.dayLabelGap },
+  bar: { width: '100%', borderTopLeftRadius: 6, borderTopRightRadius: 6 },
+  dayLabel: {
+    fontFamily: home.fontFamily.semibold,
+    fontSize: home.fontSize.micro,
+    color: home.colors.onNavyMuted,
+  },
+
+  // --- Kartu statistik ---
+  statRow: { flexDirection: 'row', gap: spacing.sm },
+  statCard: {
+    flex: 1,
+    backgroundColor: home.colors.surface,
+    borderColor: navy.border,
+    borderWidth: 1,
+    borderRadius: home.radius.card,
+    padding: home.spacing.statPadding,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontFamily: home.fontFamily.extraBold,
+    fontSize: home.fontSize.stat,
+    color: navy.dark,
+  },
+  statLabel: {
+    marginTop: spacing.hair,
+    fontFamily: home.fontFamily.semibold,
+    fontSize: home.fontSize.caption,
+    color: navy.textSecondary,
+    textAlign: 'center',
+  },
+
+  // --- Tombol transaksi ---
+  cta: {
+    height: home.spacing.ctaHeight,
+    borderRadius: home.radius.cta,
+    backgroundColor: navy.dark,
+    paddingHorizontal: home.spacing.listPadding,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
-    paddingVertical: 10,
-    marginTop: 4,
+    justifyContent: 'space-between',
   },
-  restockInfo: { flex: 1 },
-  restockName: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  restockMeta: { fontSize: 12, color: '#6B7280', marginTop: 2 },
-  sectionFooter: { marginTop: 12 },
-  recentRow: {
+  ctaPressed: { opacity: opacity.pressed },
+  ctaText: {
+    fontFamily: home.fontFamily.bold,
+    fontSize: home.fontSize.button,
+    color: home.colors.surface,
+  },
+  ctaCircle: {
+    width: home.spacing.ctaCircle,
+    height: home.spacing.ctaCircle,
+    borderRadius: home.spacing.ctaCircle / 2,
+    backgroundColor: home.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // --- Bagian daftar ---
+  section: { gap: spacing.sm },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  sectionTitle: {
+    flex: 1,
+    fontFamily: home.fontFamily.extraBold,
+    fontSize: home.fontSize.section,
+    color: navy.dark,
+  },
+  link: {
+    fontFamily: home.fontFamily.bold,
+    fontSize: home.fontSize.body,
+    color: navy.main,
+  },
+  listCard: { padding: home.spacing.listPadding },
+  row: {
+    minHeight: home.spacing.rowHeight,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
-    paddingVertical: 10,
-    marginTop: 4,
+    gap: spacing.sm,
   },
-  recentTotal: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  rowDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: navy.border,
+  },
+  rowInfo: { flex: 1 },
+  rowTitle: {
+    flex: 1,
+    fontFamily: home.fontFamily.bold,
+    fontSize: home.fontSize.row,
+    color: navy.dark,
+  },
+  rowMeta: {
+    marginTop: spacing.hair,
+    fontFamily: home.fontFamily.semibold,
+    fontSize: home.fontSize.micro,
+    color: navy.textSecondary,
+  },
+  rowTotal: {
+    fontFamily: home.fontFamily.bold,
+    fontSize: home.fontSize.row,
+    color: navy.dark,
+  },
+  empty: {
+    fontFamily: home.fontFamily.semibold,
+    fontSize: home.fontSize.body,
+    color: navy.textSecondary,
+  },
 });

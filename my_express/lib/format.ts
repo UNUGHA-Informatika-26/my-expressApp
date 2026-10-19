@@ -3,12 +3,8 @@
  * Ditulis manual tanpa Intl agar pasti jalan di Hermes engine.
  */
 
-/** Format angka jadi Rupiah, contoh: 3500 → "Rp3.500". */
-export function formatRupiah(value: number): string {
-  const rounded = Math.round(value);
-  const sign = rounded < 0 ? '-' : '';
-  const digits = Math.abs(rounded).toString();
-
+/** Sisipkan titik setiap 3 digit dari kanan. Dipakai formatRupiah dan formatRibuan. */
+function groupDigits(digits: string): string {
   let grouped = '';
   for (let i = 0; i < digits.length; i++) {
     // Sisipkan titik setiap 3 digit dari kanan.
@@ -17,6 +13,27 @@ export function formatRupiah(value: number): string {
     }
     grouped += digits[i];
   }
+  return grouped;
+}
 
-  return `${sign}Rp${grouped}`;
+/** Format angka jadi Rupiah, contoh: 3500 → "Rp3.500". */
+export function formatRupiah(value: number): string {
+  const rounded = Math.round(value);
+  const sign = rounded < 0 ? '-' : '';
+  const digits = Math.abs(rounded).toString();
+
+  return `${sign}Rp${groupDigits(digits)}`;
+}
+
+/**
+ * Format angka dengan titik ribuan TANPA awalan Rupiah, contoh: 2500 → "2.500".
+ * Dipakai baris barang pada struk, di mana kolom angka harus lurus dan baris
+ * TOTAL sudah membawa "Rp" sendiri.
+ */
+export function formatRibuan(value: number): string {
+  const rounded = Math.round(value);
+  const sign = rounded < 0 ? '-' : '';
+  const digits = Math.abs(rounded).toString();
+
+  return `${sign}${groupDigits(digits)}`;
 }

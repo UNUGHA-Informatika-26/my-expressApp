@@ -25,6 +25,7 @@ import {
   type DistributorFormValues,
 } from '../../features/debt/validation';
 import { getErrorMessage } from '../../lib/api';
+import { navy } from '../../lib/theme';
 import type { Distributor } from '../../types/api';
 
 /** Tombol cepat menetapkan jatuh tempo beberapa hari ke depan. */
@@ -343,7 +344,7 @@ function DistributorPicker({
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#F9FAFB' },
+  flex: { flex: 1, backgroundColor: navy.background },
   content: { padding: 16, paddingBottom: 32 },
   label: { fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 6 },
   select: {

@@ -3,6 +3,7 @@ import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { ProductForm, EMPTY_PRODUCT_VALUES } from '../../features/catalog/ProductForm';
 import { useCreateProduct } from '../../features/catalog/queries';
 import { getErrorMessage } from '../../lib/api';
+import { navy } from '../../lib/theme';
 
 /**
  * Layar tambah produk baru (dipakai tombol + di Katalog, dan hasil scan
@@ -34,7 +35,7 @@ export default function ProdukBaruScreen() {
         options={{
           headerShown: true,
           title: 'Produk Baru',
-          headerTintColor: '#2563EB',
+          headerTintColor: navy.main,
           headerStyle: { backgroundColor: '#FFFFFF' },
           headerTitleStyle: { color: '#111827' },
         }}
@@ -53,6 +54,6 @@ export default function ProdukBaruScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: navy.background },
   content: { padding: 16 },
 });

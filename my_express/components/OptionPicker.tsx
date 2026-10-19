@@ -7,13 +7,26 @@ import { colors, fontSize, layout, opacity, radius, spacing, text } from '../lib
 interface Props {
   /** Judul kolom, misalnya "Kategori". */
   label: string;
-  /** Nilai yang sedang terpilih; `null` berarti pilihan "Semua". */
+  /** Nilai yang sedang terpilih; `null` berarti belum ada pilihan. */
   value: string | null;
-  /** Daftar pilihan. Opsi "Semua" ditambahkan sendiri di urutan paling atas. */
+  /** Daftar pilihan. */
   options: string[];
-  /** Teks untuk pilihan "Semua". */
-  allLabel: string;
+  /**
+   * Teks untuk pilihan "Semua", diletakkan paling atas.
+   * Kosongkan untuk pemilih yang wajib diisi (pada form) supaya barisnya tidak muncul.
+   */
+  allLabel?: string;
+  /** Teks pengganti bila belum ada pilihan dan `allLabel` tidak dipakai. */
+  placeholder?: string;
   onSelect: (value: string | null) => void;
+  /**
+   * Baris tambahan paling bawah untuk memilih mengetik nilai sendiri.
+   * Tekanannya memanggil `onCustom`, bukan `onSelect`.
+   */
+  customLabel?: string;
+  onCustom?: () => void;
+  /** Pesan error validasi; jika ada, kolom berwarna merah dan pesan tampil. */
+  error?: string;
 }
 
 /**
@@ -23,15 +36,32 @@ interface Props {
  * (kategori produk), sehingga tidak perlu berjejer memakan lebar layar.
  * Pilihan yang jumlahnya tetap dan sedikit lebih cocok memakai chip biasa.
  */
-export function OptionPicker({ label, value, options, allLabel, onSelect }: Props) {
+export function OptionPicker({
+  label,
+  value,
+  options,
+  allLabel,
+  placeholder,
+  onSelect,
+  customLabel,
+  onCustom,
+  error,
+}: Props) {
   const [open, setOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
 
-  const selectedLabel = value ?? allLabel;
+  const selectedLabel = value ?? allLabel ?? placeholder ?? '';
+  // Belum terisi dan tidak ada pilihan "Semua" → teks ditampilkan redup.
+  const kosong = value === null && allLabel === undefined;
 
   const choose = (next: string | null) => {
     onSelect(next);
+    setOpen(false);
+  };
+
+  const chooseCustom = () => {
+    onCustom?.();
     setOpen(false);
   };
 
@@ -47,13 +77,18 @@ export function OptionPicker({ label, value, options, allLabel, onSelect }: Prop
         accessibilityLabel={`${label}: ${selectedLabel}`}
         accessibilityState={{ expanded: open }}
         onPress={() => setOpen(true)}
-        style={({ pressed }) => [styles.field, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.field,
+          error ? styles.fieldError : null,
+          pressed && styles.pressed,
+        ]}
       >
-        <Text style={styles.value} numberOfLines={1}>
+        <Text style={[styles.value, kosong && styles.valueEmpty]} numberOfLines={1}>
           {selectedLabel}
         </Text>
         <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
       </Pressable>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
         {/* Menutup lewat latar belakang dan tombol mundur Android. */}
@@ -79,7 +114,9 @@ export function OptionPicker({ label, value, options, allLabel, onSelect }: Prop
             bounces={false}
             keyboardShouldPersistTaps="handled"
           >
-            <OptionRow label={allLabel} selected={value === null} onPress={() => choose(null)} />
+            {allLabel !== undefined && (
+              <OptionRow label={allLabel} selected={value === null} onPress={() => choose(null)} />
+            )}
             {options.map((option) => (
               <OptionRow
                 key={option}
@@ -88,6 +125,9 @@ export function OptionPicker({ label, value, options, allLabel, onSelect }: Prop
                 onPress={() => choose(option)}
               />
             ))}
+            {customLabel !== undefined && onCustom !== undefined && (
+              <OptionRow label={customLabel} selected={false} onPress={chooseCustom} />
+            )}
           </ScrollView>
         </View>
       </Modal>
@@ -139,7 +179,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     backgroundColor: colors.surface,
   },
+  /** Kolom pemilih menampilkan kesalahan dengan cara yang sama seperti Input. */
+  fieldError: { borderColor: colors.danger },
   value: { flex: 1, fontSize: fontSize.small, color: colors.text },
+  /** Tampilan kolom yang belum diisi. */
+  valueEmpty: { color: colors.textMuted },
+  error: { ...text.error, marginTop: spacing.xs },
   scrim: { flex: 1, backgroundColor: colors.scrim },
   sheet: {
     backgroundColor: colors.surface,

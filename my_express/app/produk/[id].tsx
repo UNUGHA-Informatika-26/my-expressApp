@@ -9,6 +9,7 @@ import {
   useUpdateProduct,
 } from '../../features/catalog/queries';
 import { getErrorMessage } from '../../lib/api';
+import { navy } from '../../lib/theme';
 import { formatRupiah } from '../../lib/format';
 
 /** Layar ubah dan hapus produk (dibuka dengan menukar kartu di Katalog). */
@@ -57,7 +58,7 @@ export default function ProdukDetailScreen() {
     return (
       <View style={styles.center}>
         <Stack.Screen
-          options={{ headerShown: true, title: 'Ubah Produk', headerTintColor: '#2563EB' }}
+          options={{ headerShown: true, title: 'Ubah Produk', headerTintColor: navy.main }}
         />
         <Text style={styles.muted}>Memuat produk...</Text>
       </View>
@@ -68,7 +69,7 @@ export default function ProdukDetailScreen() {
     return (
       <View style={styles.center}>
         <Stack.Screen
-          options={{ headerShown: true, title: 'Ubah Produk', headerTintColor: '#2563EB' }}
+          options={{ headerShown: true, title: 'Ubah Produk', headerTintColor: navy.main }}
         />
         <Text style={styles.errorText}>
           {productQuery.error ? getErrorMessage(productQuery.error) : 'Produk tidak ditemukan'}
@@ -86,7 +87,7 @@ export default function ProdukDetailScreen() {
         options={{
           headerShown: true,
           title: 'Ubah Produk',
-          headerTintColor: '#2563EB',
+          headerTintColor: navy.main,
           headerStyle: { backgroundColor: '#FFFFFF' },
           headerTitleStyle: { color: '#111827' },
         }}
@@ -103,6 +104,7 @@ export default function ProdukDetailScreen() {
             barcode: product.barcode,
             name: product.name,
             category: product.category,
+            satuan: product.satuan,
             price: String(product.price),
             stock: String(product.stock),
             minStock: String(product.minStock),
@@ -121,8 +123,8 @@ export default function ProdukDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB', padding: 24, gap: 16 },
+  container: { flex: 1, backgroundColor: navy.background },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: navy.background, padding: 24, gap: 16 },
   content: { padding: 16 },
   summary: {
     backgroundColor: '#EFF6FF',

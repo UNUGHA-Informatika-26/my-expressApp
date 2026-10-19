@@ -14,6 +14,7 @@ import {
   type PaymentFormValues,
 } from '../../features/debt/validation';
 import { getErrorMessage } from '../../lib/api';
+import { navy } from '../../lib/theme';
 import { formatClock, formatShortDate } from '../../lib/date';
 import { formatRupiah } from '../../lib/format';
 import type { DebtDetail, DebtPayment } from '../../types/api';
@@ -254,7 +255,7 @@ function Row({
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#F9FAFB' },
+  flex: { flex: 1, backgroundColor: navy.background },
   content: { padding: 16, paddingBottom: 32 },
   center: {
     flex: 1,
@@ -262,7 +263,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
     gap: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: navy.background,
   },
   muted: { fontSize: 15, color: '#6B7280', textAlign: 'center' },
   mutedLeft: { fontSize: 14, color: '#6B7280', marginTop: 8 },

@@ -12,7 +12,7 @@ interface AuthState {
   /** Data pemilik toko yang sedang login. */
   user: User | null;
 
-  /** Simpan sesi login baru (dipanggil setelah register/login sukses). */
+  /** Simpan sesi login baru (hanya dipanggil setelah login sukses; pendaftaran TIDAK membuat sesi). */
   setSession: (token: string, user: User) => void;
   /** Perbarui data user tanpa mengubah token (dipakai setelah edit profil). */
   setUser: (user: User) => void;

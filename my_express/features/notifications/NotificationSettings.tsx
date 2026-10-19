@@ -6,7 +6,7 @@ import {
   LOCAL_NOTIFICATIONS_UNAVAILABLE_NOTE,
   ensureNotificationPermission,
 } from './localNotifications';
-import { text } from '../../lib/theme';
+import { navy, text } from '../../lib/theme';
 import { useSettingsStore, type NotificationToggleKey } from '../../store/settings';
 
 /** Satu baris sakelar pada pengaturan notifikasi. */
@@ -91,7 +91,7 @@ export function NotificationSettings() {
       {ROWS.map((row) => (
         <View key={row.key} style={styles.row}>
           <View style={styles.iconBox}>
-            <Ionicons name={row.icon} size={18} color="#2563EB" />
+            <Ionicons name={row.icon} size={18} color={navy.main} />
           </View>
           <View style={styles.rowBody}>
             <Text style={styles.rowTitle}>{row.title}</Text>
@@ -102,7 +102,7 @@ export function NotificationSettings() {
             onValueChange={(value) => void onToggle(row.key, value)}
             disabled={!LOCAL_NOTIFICATIONS_AVAILABLE}
             trackColor={{ false: '#D1D5DB', true: '#93C5FD' }}
-            thumbColor={values[row.key] ? '#2563EB' : '#F3F4F6'}
+            thumbColor={values[row.key] ? navy.main : '#F3F4F6'}
             accessibilityLabel={row.title}
           />
         </View>

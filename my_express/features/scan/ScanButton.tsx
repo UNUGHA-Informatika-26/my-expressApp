@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text } from 'react-native';
+import { navy } from '../../lib/theme';
 import { registerScanHandler } from './scan-result';
 
 interface Props {
@@ -30,6 +32,12 @@ export function ScanButton({ onResult, variant = 'button', label = 'Pindai Barco
         onPress={onPress}
         style={({ pressed }) => [styles.icon, pressed && styles.pressed]}
       >
+        <LinearGradient
+          colors={[navy.main, navy.dark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
         <Ionicons name="scan-outline" size={22} color="#FFFFFF" />
       </Pressable>
     );
@@ -41,7 +49,7 @@ export function ScanButton({ onResult, variant = 'button', label = 'Pindai Barco
       onPress={onPress}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
     >
-      <Ionicons name="scan-outline" size={18} color="#2563EB" />
+      <Ionicons name="scan-outline" size={18} color={navy.main} />
       <Text style={styles.buttonLabel}>{label}</Text>
     </Pressable>
   );
@@ -56,17 +64,18 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 44,
     borderWidth: 1,
-    borderColor: '#2563EB',
+    borderColor: navy.main,
     borderRadius: 12,
     backgroundColor: '#EFF6FF',
     marginBottom: 16,
   },
-  buttonLabel: { fontSize: 15, fontWeight: '700', color: '#2563EB' },
+  buttonLabel: { fontSize: 15, fontWeight: '700', color: navy.main },
   icon: {
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#2563EB',
+    // `overflow: hidden` memotong gradasi mengikuti sudut membulat.
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },

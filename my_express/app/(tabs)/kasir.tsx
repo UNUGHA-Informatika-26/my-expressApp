@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, Tabs } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   Alert,
@@ -20,14 +21,15 @@ import {
 } from '../../features/checkout/validation';
 import { getProductByBarcode } from '../../features/catalog/api';
 import { ScanButton } from '../../features/scan/ScanButton';
+import { TabHeaderTitle } from '../../features/tabs/TabHeaderTitle';
 import { getErrorMessage, isNotFound } from '../../lib/api';
 import { formatRupiah } from '../../lib/format';
+import { navy } from '../../lib/theme';
 import { countCart, totalCart, useCartStore } from '../../store/cart';
 
 const PAYMENT_METHODS: { value: PaymentFormValues['paymentMethod']; label: string }[] = [
   { value: 'tunai', label: 'Tunai' },
   { value: 'qris', label: 'QRIS' },
-  { value: 'transfer', label: 'Transfer' },
 ];
 
 export default function KasirScreen() {
@@ -105,6 +107,13 @@ export default function KasirScreen() {
       return;
     }
 
+    if (paymentMethod === 'qris') {
+      // Transaksi BELUM dibuat di sini — layar QRIS yang memutuskan kapan
+      // checkout berjalan, supaya tombol Batal tidak meninggalkan transaksi.
+      router.push('/pembayaran/qris');
+      return;
+    }
+
     const payload = buildPayload();
     if (!payload) {
       return;
@@ -115,6 +124,9 @@ export default function KasirScreen() {
         router.replace({
           pathname: '/pembayaran/berhasil',
           params: {
+            // id dipakai layar struk untuk mengambil daftar barang —
+            // daftar itu terlalu panjang untuk dikirim lewat parameter rute.
+            id: transaction.id,
             code: transaction.code,
             paymentMethod: transaction.paymentMethod,
             total: String(transaction.total),
@@ -132,8 +144,21 @@ export default function KasirScreen() {
 
   return (
     <View style={styles.container}>
+      <Tabs.Screen
+        options={{
+          headerTitle: () => (
+            <TabHeaderTitle
+              title="Kasir"
+              subtitle={
+                jumlahItem > 0
+                  ? `${jumlahItem} item dalam keranjang`
+                  : 'Keranjang kosong'
+              }
+            />
+          ),
+        }}
+      />
       <View style={styles.toolbar}>
-        <Text style={styles.title}>Kasir</Text>
         <ScanButton variant="icon" label="Pindai barcode ke keranjang" onResult={onScanFromKasir} />
       </View>
 
@@ -181,6 +206,15 @@ export default function KasirScreen() {
                   pressed && styles.pressed,
                 ]}
               >
+                {/* Gradasi hanya dipasang saat metode ini yang dipilih. */}
+                {active && (
+                  <LinearGradient
+                    colors={[navy.main, navy.dark]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                )}
                 <Text style={[styles.methodText, active && styles.methodTextActive]}>
                   {method.label}
                 </Text>
@@ -214,28 +248,33 @@ export default function KasirScreen() {
 
         {formError && <Text style={styles.error}>{formError}</Text>}
 
-        <Button
-          label={items.length === 0 ? 'Bayar' : `Bayar ${formatRupiah(total)}`}
-          onPress={onPay}
-          loading={checkoutMutation.isPending}
-          disabled={items.length === 0}
-        />
+        {/* Dibungkus agar tombol selalu punya jarak dari elemen di atasnya.
+            Tanpa ini baris metode (khususnya saat QRIS dipilih, ketika kotak
+            uang tidak dirender) menempel langsung ke tombol Bayar. */}
+        <View style={styles.payRow}>
+          <Button
+            label={items.length === 0 ? 'Bayar' : `Bayar ${formatRupiah(total)}`}
+            onPress={onPay}
+            loading={checkoutMutation.isPending}
+            disabled={items.length === 0}
+          />
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: navy.background },
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    // Judul sudah pindah ke header, jadi tombol pemindai menepi ke kanan.
+    justifyContent: 'flex-end',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
   },
-  title: { fontSize: 24, fontWeight: '700', color: '#111827' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 8 },
   emptyTitle: { fontSize: 17, fontWeight: '700', color: '#111827', marginTop: 4 },
   muted: { fontSize: 15, color: '#6B7280', textAlign: 'center' },
@@ -263,7 +302,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  methodActive: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
+  methodActive: {
+    // Latar metode aktif kini gradasi; `overflow: hidden` memotongnya
+    // mengikuti sudut membulat.
+    borderColor: navy.main,
+    overflow: 'hidden',
+  },
   pressed: { opacity: 0.75 },
   methodText: { fontSize: 15, fontWeight: '600', color: '#374151' },
   methodTextActive: { color: '#FFFFFF' },
@@ -283,4 +327,9 @@ const styles = StyleSheet.create({
   changeValue: { fontSize: 16, fontWeight: '700', color: '#059669' },
   changeShort: { color: '#DC2626' },
   error: { fontSize: 13, color: '#DC2626', marginTop: 10 },
+  /**
+   * Jarak elemen di atas ke tombol Bayar. Angka 14 dipilih sama dengan
+   * `sectionLabel.marginTop` di panel ini supaya ritmenya seragam.
+   */
+  payRow: { marginTop: 14 },
 });

@@ -38,6 +38,7 @@ export interface Product {
   barcode: string;
   name: string;
   category: string;
+  satuan: string;
   price: number;
   stock: number;
   minStock: number;
@@ -61,11 +62,16 @@ export interface MessageResponse {
 /** Metode bayar yang didukung (lihat 04-api.md). */
 export type PaymentMethod = 'tunai' | 'qris' | 'transfer';
 
-/** Satu baris item transaksi; nama dan harga adalah salinan saat transaksi dibuat. */
+/**
+ * Satu baris item transaksi; nama, satuan, dan harga adalah salinan saat
+ * transaksi dibuat. `satuan` tidak pernah dikirim aplikasi — ia disalin
+ * server dari produk (lihat docs/04-api.md bagian 3).
+ */
 export interface TransactionItem {
   id: string;
   productId: string | null;
   productName: string;
+  satuan: string;
   price: number;
   quantity: number;
   subtotal: number;
@@ -86,6 +92,9 @@ export interface Transaction {
 /** Respons checkout: { data: Transaction } */
 export type CheckoutResponse = ApiResponse<Transaction>;
 
+/** Respons detail transaksi: { data: Transaction } — dipakai tampilan struk. */
+export type TransactionDetailResponse = ApiResponse<Transaction>;
+
 /** Isi keranjang: cukup untuk menghitung total dan mengirim checkout. */
 export interface CartItem {
   productId: string;
@@ -94,6 +103,8 @@ export interface CartItem {
   quantity: number;
   /** Stok terakhir yang diketahui, dipakai untuk membatasi tombol +. */
   stock: number;
+  /** Satuan pengukuran stok dan jumlah, disalin dari produk saat dimasukkan. */
+  satuan: string;
 }
 
 /**
@@ -129,6 +140,7 @@ export interface RestockItem {
   barcode: string;
   stock: number;
   minStock: number;
+  satuan: string;
   price: number;
   stockStatus: StockStatus;
 }
@@ -245,6 +257,8 @@ export interface NotificationItem {
   barcode?: string;
   stock?: number;
   minStock?: number;
+  /** Satuan pengukuran stok (pcs, rim, lembar, ...). */
+  satuan?: string;
 
   // Hutang (type hutang_jatuh_tempo).
   debtId?: string;

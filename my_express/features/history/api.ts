@@ -1,5 +1,11 @@
 import { api } from '../../lib/api';
-import type { HistoryDay, HistoryResponse, PaymentMethod } from '../../types/api';
+import type {
+  HistoryDay,
+  HistoryResponse,
+  PaymentMethod,
+  Transaction,
+  TransactionDetailResponse,
+} from '../../types/api';
 
 /** Filter opsional untuk GET /api/transactions (lihat 04-api.md). */
 export interface HistoryFilter {
@@ -22,5 +28,14 @@ export async function listHistory(filter: HistoryFilter = {}): Promise<HistoryDa
       to: filter.to || undefined,
     },
   });
+  return data.data;
+}
+
+/**
+ * GET /api/transactions/:id — satu transaksi lengkap beserta itemnya.
+ * Dipakai tampilan struk, baik dari layar pembayaran berhasil maupun riwayat.
+ */
+export async function getTransaction(id: string): Promise<Transaction> {
+  const { data } = await api.get<TransactionDetailResponse>(`/api/transactions/${id}`);
   return data.data;
 }

@@ -1,4 +1,6 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View } from 'react-native';
+import { navy } from '../../lib/theme';
 import { formatRupiah } from '../../lib/format';
 
 /**
@@ -30,7 +32,18 @@ export function ProgressBar({
             { width: `${ratio * 100}%` },
             done ? styles.fillDone : null,
           ]}
-        />
+        >
+          {/* Warna hijau saat lunas menimpa gradasi, jadi cukup dirender
+              selama hutangnya belum lunas. */}
+          {!done && (
+            <LinearGradient
+              colors={[navy.main, navy.dark]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+          )}
+        </View>
       </View>
       <Text style={styles.progressText}>
         Terbayar {formatRupiah(paid)} dari {formatRupiah(total)}
@@ -55,7 +68,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: 10,
   },
-  fill: { height: '100%', borderRadius: 4, backgroundColor: '#2563EB' },
+  fill: { height: '100%', borderRadius: 4, overflow: 'hidden' },
   fillDone: { backgroundColor: '#059669' },
   progressText: { fontSize: 12, color: '#6B7280', marginTop: 6 },
 });

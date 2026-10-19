@@ -1,12 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, Tabs } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { DebtCard } from '../../features/debt/DebtCard';
 import { useDebts } from '../../features/debt/queries';
+import { TabHeaderTitle } from '../../features/tabs/TabHeaderTitle';
 import { getErrorMessage } from '../../lib/api';
 import { formatRupiah } from '../../lib/format';
+import { navy } from '../../lib/theme';
 import type { DebtStatus, DebtSummary } from '../../types/api';
 
 /** Pilihan filter status; null = tampilkan semua. */
@@ -33,6 +36,22 @@ export default function HutangScreen() {
 
   return (
     <View style={styles.container}>
+      <Tabs.Screen
+        options={{
+          headerTitle: () => (
+            <TabHeaderTitle
+              title="Hutang"
+              // `summary` dihitung dari SELURUH hutang yang belum lunas, jadi
+              // angkanya tidak ikut berubah saat filter daftar diganti.
+              subtitle={
+                summary
+                  ? `${formatRupiah(summary.totalOutstanding)} berjalan`
+                  : 'Memuat ringkasan...'
+              }
+            />
+          ),
+        }}
+      />
       <View style={styles.filters}>
         <FlatList
           horizontal
@@ -103,7 +122,7 @@ function SummaryCards({ summary }: { summary: DebtSummary }) {
         label="Total berjalan"
         value={formatRupiah(summary.totalOutstanding)}
         icon="wallet-outline"
-        color="#2563EB"
+        color={navy.main}
       />
       <SummaryBox
         label="Lewat tempo"
@@ -151,13 +170,22 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
       onPress={onPress}
       style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && styles.pressed]}
     >
+      {/* Gradasi hanya dipasang saat aktif; chip nonaktif tetap berlatar putih. */}
+      {active && (
+        <LinearGradient
+          colors={[navy.main, navy.dark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: navy.background },
   filters: { paddingTop: 12, paddingBottom: 4 },
   chipRow: { paddingHorizontal: 16, gap: 8 },
   chip: {
@@ -168,7 +196,12 @@ const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
   },
-  chipActive: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
+  chipActive: {
+    // Latar chip aktif kini gradasi; `overflow: hidden` memotongnya
+    // mengikuti sudut membulat.
+    borderColor: navy.main,
+    overflow: 'hidden',
+  },
   pressed: { opacity: 0.7 },
   chipText: { fontSize: 13, color: '#374151', fontWeight: '600' },
   chipTextActive: { color: '#FFFFFF' },

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { formatRupiah } from '../../lib/format';
+import { colors, fontSize, navy } from '../../lib/theme';
 import type { CartItem } from '../../types/api';
 
 interface Props {
@@ -42,10 +43,15 @@ export function CartRow({ item, onChangeQuantity, onRemove }: Props) {
             onPress={() => onChangeQuantity(item.productId, item.quantity - 1)}
             style={({ pressed }) => [styles.step, pressed && styles.pressed]}
           >
-            <Ionicons name="remove" size={18} color="#2563EB" />
+            <Ionicons name="remove" size={18} color={navy.main} />
           </Pressable>
 
-          <Text style={styles.qty}>{item.quantity}</Text>
+          {/* Jumlah ditulis lengkap dengan satuannya, mis. "2 rim",
+              supaya kasir tidak perlu menebak satuan barang. */}
+          <View style={styles.qtyWrap}>
+            <Text style={styles.qty}>{item.quantity}</Text>
+            <Text style={styles.qtySatuan}>{item.satuan}</Text>
+          </View>
 
           <Pressable
             accessibilityRole="button"
@@ -55,14 +61,16 @@ export function CartRow({ item, onChangeQuantity, onRemove }: Props) {
             disabled={atMax}
             style={({ pressed }) => [styles.step, pressed && styles.pressed, atMax && styles.stepDisabled]}
           >
-            <Ionicons name="add" size={18} color={atMax ? '#9CA3AF' : '#2563EB'} />
+            <Ionicons name="add" size={18} color={atMax ? '#9CA3AF' : navy.main} />
           </Pressable>
         </View>
 
         <Text style={styles.subtotal}>{formatRupiah(item.price * item.quantity)}</Text>
       </View>
 
-      {atMax && <Text style={styles.hint}>Stok tersisa {item.stock}</Text>}
+      {atMax && (
+        <Text style={styles.hint}>Stok tersisa {item.stock} {item.satuan}</Text>
+      )}
     </View>
   );
 }
@@ -99,7 +107,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepDisabled: { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' },
-  qty: { minWidth: 28, textAlign: 'center', fontSize: 16, fontWeight: '700', color: '#111827' },
+  qtyWrap: { minWidth: 44, alignItems: 'center' },
+  qty: { textAlign: 'center', fontSize: 16, fontWeight: '700', color: '#111827' },
+  qtySatuan: { fontSize: fontSize.caption, color: colors.textMuted, marginTop: 1 },
   subtotal: { fontSize: 15, fontWeight: '700', color: '#111827', textAlign: 'right', minWidth: 88 },
   hint: { fontSize: 12, color: '#B45309', marginTop: 8 },
 });

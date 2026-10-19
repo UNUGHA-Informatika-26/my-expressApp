@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { NotificationRow } from '../features/notifications/NotificationRow';
 import { useNotifications } from '../features/notifications/queries';
 import { getErrorMessage } from '../lib/api';
+import { navy } from '../lib/theme';
 
 /**
  * Layar Notifikasi (tugas Fase 8, konsep.md bagian 3).
@@ -70,7 +71,7 @@ export default function NotifikasiScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: navy.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16 },
   list: { padding: 16, paddingBottom: 32 },
   muted: { fontSize: 15, color: '#6B7280' },

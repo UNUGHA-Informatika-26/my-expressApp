@@ -1,36 +1,42 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNotifications } from './queries';
+import { home, navy } from '../../lib/theme';
+
+interface Props {
+  /**
+   * Angka pada badge. Bila tidak diisi, memakai `count` dari server, yang
+   * sudah mewakili seluruh peringatan stok dan hutang. Beranda mengisi prop
+   * ini agar angkanya persis rumus yang dipakai di layar tersebut.
+   */
+  count?: number;
+}
 
 /**
- * Ikon lonceng di header Beranda dengan angka peringatan (konsep.md bagian 3).
+ * Tombol lonceng bulat putih di kepala beranda (konsep.md bagian 3).
  *
- * Angkanya berasal dari `count` server, sehingga selalu sama dengan jumlah
- * baris di layar Notifikasi.
+ * Tanpa `count`, angkanya berasal dari `count` server sehingga selalu sama
+ * dengan jumlah baris di layar Notifikasi.
  */
-export function NotificationBell() {
+export function NotificationBell({ count }: Props) {
   const notificationsQuery = useNotifications();
-  const count = notificationsQuery.data?.count ?? 0;
+  const total = count ?? notificationsQuery.data?.count ?? 0;
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={count > 0 ? `Notifikasi, ${count} peringatan` : 'Notifikasi'}
+      accessibilityLabel={total > 0 ? `Notifikasi, ${total} peringatan` : 'Notifikasi'}
       hitSlop={8}
       onPress={() => router.push('/notifikasi')}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
     >
-      <Ionicons
-        name={count > 0 ? 'notifications' : 'notifications-outline'}
-        size={22}
-        color="#111827"
-      />
+      <Feather name="bell" size={home.tab.iconSize} color={navy.dark} />
 
-      {count > 0 && (
+      {total > 0 && (
         <View style={styles.badge}>
-          {/* Angka lebar, mis. 100+, agar badge tidak meluap ke luar ikon. */}
-          <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
+          {/* Angka lebar, mis. 100+, agar badge tidak meluap ke luar tombol. */}
+          <Text style={styles.badgeText}>{total > 99 ? '99+' : total}</Text>
         </View>
       )}
     </Pressable>
@@ -38,21 +44,34 @@ export function NotificationBell() {
 }
 
 const styles = StyleSheet.create({
-  button: { padding: 4 },
-  pressed: { opacity: 0.6 },
+  button: {
+    width: home.spacing.bellSize,
+    height: home.spacing.bellSize,
+    borderRadius: home.spacing.bellSize / 2,
+    backgroundColor: home.colors.surface,
+    borderWidth: 1,
+    borderColor: navy.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: { opacity: 0.7 },
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -4,
+    top: 2,
+    right: 2,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
     paddingHorizontal: 4,
-    backgroundColor: '#DC2626',
+    backgroundColor: home.colors.badge,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#FFFFFF',
+    borderColor: home.colors.surface,
   },
-  badgeText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
+  badgeText: {
+    fontFamily: home.fontFamily.bold,
+    fontSize: home.tab.badgeSize,
+    color: home.colors.surface,
+  },
 });

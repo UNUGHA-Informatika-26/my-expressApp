@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../../components/Card';
 import { formatRupiah } from '../../lib/format';
+import { navy } from '../../lib/theme';
 import type { Product } from '../../types/api';
 import { StockBadge } from './StockBadge';
 
@@ -36,7 +38,7 @@ export function ProductCard({ product, onPress, onAdd }: Props) {
       <View style={styles.footer}>
         <Text style={styles.price}>{formatRupiah(product.price)}</Text>
         <Text style={styles.stock}>
-          Stok: {product.stock}
+          Stok: {product.stock} {product.satuan}
           {product.minStock > 0 ? ` (min. ${product.minStock})` : ''}
         </Text>
 
@@ -54,6 +56,16 @@ export function ProductCard({ product, onPress, onAdd }: Props) {
               outOfStock && styles.addDisabled,
             ]}
           >
+            {/* Stok habis memakai latar abu-abu, jadi gradasi hanya dirender
+                selama tombolnya aktif — kalau tidak, gradasi menutupinya. */}
+            {!outOfStock && (
+              <LinearGradient
+                colors={[navy.main, navy.dark]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+            )}
             <Ionicons name="add" size={20} color={outOfStock ? '#9CA3AF' : '#FFFFFF'} />
           </Pressable>
         )}
@@ -68,13 +80,14 @@ const styles = StyleSheet.create({
   name: { flex: 1, fontSize: 16, fontWeight: '700', color: '#111827' },
   meta: { fontSize: 13, color: '#6B7280', marginTop: 4 },
   footer: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
-  price: { fontSize: 16, fontWeight: '700', color: '#2563EB' },
+  price: { fontSize: 16, fontWeight: '700', color: navy.main },
   stock: { fontSize: 13, color: '#374151', flex: 1, textAlign: 'right' },
   add: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#2563EB',
+    // `overflow: hidden` memotong gradasi mengikuti sudut membulat.
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
