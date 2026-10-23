@@ -29,7 +29,7 @@ import { countCart, totalCart, useCartStore } from '../../store/cart';
 
 const PAYMENT_METHODS: { value: PaymentFormValues['paymentMethod']; label: string }[] = [
   { value: 'tunai', label: 'Tunai' },
-  { value: 'qris', label: 'QRIS' },
+  { value: 'qris', label: 'Non Tunai' },
 ];
 
 export default function KasirScreen() {

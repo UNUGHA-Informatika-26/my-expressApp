@@ -15,6 +15,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Input } from '../../components/Input';
 import {
+  deleteProfile,
   getProfile,
   updateProfile,
 } from '../../features/auth/api';
@@ -35,6 +36,13 @@ export default function AkunScreen() {
 
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
+
+  // Konfirmasi hapus akun sengaja dibuat langkah terpisah, bukan sekadar
+  // dialog: pengguna harus membuka panelnya sendiri lalu mengetik ulang kata
+  // sandi, sehingga tombol merah tidak bisa tertekan tanpa sengaja.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Ambil profil terbaru dari server (bukan dari cache Zustand).
   const profileQuery = useQuery({
@@ -70,6 +78,23 @@ export default function AkunScreen() {
     },
     onError: (error) => {
       Alert.alert('Gagal memperbarui profil', getErrorMessage(error));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteProfile,
+    onSuccess: () => {
+      // Seluruh data yang di-cache berasal dari akun yang baru saja dihapus,
+      // jadi harus ikut dibuang; kalau tidak, pengguna berikutnya yang masuk
+      // bisa sempat melihat sisa datanya.
+      clearSession();
+      queryClient.clear();
+      router.replace('/login');
+    },
+    onError: (error) => {
+      // 401 = kata sandi salah. Pesannya ditaruh di bawah kolom sandi, bukan
+      // dialog, supaya pengguna bisa langsung membetulkan.
+      setDeleteError(getErrorMessage(error));
     },
   });
 
@@ -111,6 +136,24 @@ export default function AkunScreen() {
     ]);
   };
 
+  const onCancelDelete = () => {
+    setConfirmingDelete(false);
+    setDeletePassword('');
+    setDeleteError(null);
+    deleteMutation.reset();
+  };
+
+  const onConfirmDelete = () => {
+    if (!deletePassword.trim()) {
+      setDeleteError('Kata sandi wajib diisi');
+      return;
+    }
+    setDeleteError(null);
+    // Server yang memutuskan: bila sandi salah, 401 dikembalikan dan tidak
+    // ada satu pun baris yang sempat disentuh.
+    deleteMutation.mutate(deletePassword.trim());
+  };
+
   if (profileQuery.isLoading) {
     return (
       <View style={styles.center}>
@@ -124,6 +167,15 @@ export default function AkunScreen() {
       <View style={styles.center}>
         <Text style={styles.errorText}>{getErrorMessage(profileQuery.error)}</Text>
         <Button label="Coba lagi" onPress={() => profileQuery.refetch()} />
+        {/*
+          Tombol keluar ini WAJIB ada di cabang error, bukan cuma di layar utama.
+          Cabang error menggantikan SELURUH isi layar, jadi tanpa tombol ini
+          pengguna yang akunnya sudah tidak ada (misalnya sesi lama setelah akun
+          dihapus) terkunci total: tidak bisa keluar, tidak bisa mendaftar ulang.
+          "Coba lagi" pun tidak akan pernah membaik karena masalahnya bukan
+          jaringan — akunnya memang sudah tidak ada.
+        */}
+        <Button label="Keluar" onPress={onLogout} variant="danger" />
       </View>
     );
   }
@@ -235,6 +287,48 @@ export default function AkunScreen() {
         <NotificationSettings />
 
         <Button label="Keluar" onPress={onLogout} variant="danger" />
+
+        {confirmingDelete ? (
+          <Card>
+            <Text style={text.cardTitle}>Hapus Akun</Text>
+            <Text style={styles.warning}>
+              Seluruh data toko Anda — produk, riwayat transaksi, distributor, dan
+              hutang — akan terhapus permanen. Tindakan ini tidak bisa dibatalkan.
+            </Text>
+            <Input
+              label="Kata Sandi"
+              value={deletePassword}
+              onChangeText={(value) => {
+                setDeletePassword(value);
+                // Hilangkan pesan error begitu pengguna mulai membetulkan.
+                if (deleteError) setDeleteError(null);
+              }}
+              secureTextEntry
+              autoComplete="password"
+              placeholder="Ketik ulang kata sandi Anda"
+              error={deleteError ?? undefined}
+            />
+            <View style={styles.row}>
+              <View style={styles.rowItem}>
+                <Button label="Batal" onPress={onCancelDelete} variant="outline" />
+              </View>
+              <View style={styles.rowItem}>
+                <Button
+                  label="Hapus Permanen"
+                  onPress={onConfirmDelete}
+                  variant="danger"
+                  loading={deleteMutation.isPending}
+                />
+              </View>
+            </View>
+          </Card>
+        ) : (
+          <Button
+            label="Hapus Akun"
+            onPress={() => setConfirmingDelete(true)}
+            variant="outline"
+          />
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -257,6 +351,7 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 13, color: '#6B7280', marginBottom: 4 },
   fieldValue: { fontSize: 16, color: '#111827', fontWeight: '500' },
   muted: { fontSize: 15, color: '#6B7280' },
+  warning: { fontSize: 14, color: '#B91C1C', lineHeight: 20, marginBottom: 16 },
   errorText: { fontSize: 15, color: '#DC2626', textAlign: 'center' },
   row: { flexDirection: 'row', gap: 12 },
   rowItem: { flex: 1 },

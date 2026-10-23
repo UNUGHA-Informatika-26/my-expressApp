@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import type { BottomTabBarProps } from 'expo-router/tabs';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Keyboard, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useDashboard } from '../dashboard/queries';
 import { countCart, useCartStore } from '../../store/cart';
 import { home, navy, spacing } from '../../lib/theme';
@@ -14,6 +15,49 @@ const ICON: Record<string, keyof typeof Feather.glyphMap> = {
   hutang: 'file-text',
   akun: 'user',
 };
+
+/**
+ * Tinggi keyboard pada Android, atau 0 bila keyboard tertutup.
+ *
+ * Android memakai `softwareKeyboardLayoutMode: resize` (bawaan Expo —
+ * `app.json` tidak menyetelnya), sehingga saat keyboard terbuka tinggi jendela
+ * aplikasi mengecil dan seluruh isi layar ikut terdorong ke atas, termasuk tab
+ * bar yang seharusnya tetap berada di dasar layar. Karena pemilik meminta tab
+ * bar tidak ikut terangkat, tinggi keyboard ini dipakai untuk mengembalikannya
+ * lewat margin negatif pada wadah tab bar.
+ *
+ * iOS tidak memerlukan ini: keyboard-nya menindih layar, bukan mengecilkan
+ * jendela, sehingga tab bar di sana tidak pernah bergerak.
+ *
+ * `endCoordinates.height` berasal dari modul `Keyboard` bawaan React Native —
+ * cara yang sama yang dipakai React Navigation untuk mengetahui tinggi keyboard.
+ * Nilai yang sedikit melebih pun tidak berbahaya: tab bar hanya menjadi lebih
+ * banyak tertutup keyboard, bukan sebaliknya. Yang harus dihindari justru
+ * kekurangan, karena menyisakan celah tab bar di atas keyboard.
+ */
+function useKeyboardHeightAndroid(): number {
+  const [tinggi, setTinggi] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') {
+      return undefined;
+    }
+
+    const saatMuncul = Keyboard.addListener('keyboardDidShow', (event) => {
+      setTinggi(event.endCoordinates.height);
+    });
+    const saatHilang = Keyboard.addListener('keyboardDidHide', () => {
+      setTinggi(0);
+    });
+
+    return () => {
+      saatMuncul.remove();
+      saatHilang.remove();
+    };
+  }, []);
+
+  return tinggi;
+}
 
 /**
  * Tab bar beranda.
@@ -30,6 +74,7 @@ const ICON: Record<string, keyof typeof Feather.glyphMap> = {
 export function CustomTabBar({ state, descriptors, navigation, insets }: BottomTabBarProps) {
   const dashboardQuery = useDashboard();
   const cartItems = useCartStore((s) => s.items);
+  const tinggiKeyboard = useKeyboardHeightAndroid();
 
   const dueDebts = dashboardQuery.data?.dueDebts;
   const badgeByRoute: Record<string, number> = {
@@ -37,8 +82,30 @@ export function CustomTabBar({ state, descriptors, navigation, insets }: BottomT
     kasir: countCart(cartItems),
   };
 
+  // Saat keyboard terbuka, seluruh isi layar memang terdorong ke atas karena
+  // Android mengecilkan jendela sebesar tinggi keyboard. Dorongan itu PERLU
+  // dan tidak boleh dihilangkan — tanpanya kolom "Uang diterima", Kembalian,
+  // serta tombol Bayar/QRIS justru tertelan keyboard.
+  //
+  // Yang dikoreksi hanya posisi tab bar, lewat `transform: translateY`.
+  // Transform murni visual dan tidak mengubah tata letak sama sekali, jadi
+  // tab bar tetap memakan ruangnya di susunan (konten tidak kehilangan tempat
+  // dan tampil persis seperti biasanya), hanya digambar lebih rendah: dari
+  // (H-K-T) menjadi (H-T) — tepat di dasar layar ASLI, balik keyboard,
+  // bukan di tengah layar.
+  //
+  // Saat keyboard tertutup `tinggiKeyboard` 0 sehingga transformasi gugur dan
+  // tampilan kembali persis seperti biasanya.
   return (
-    <View style={[styles.bar, { paddingBottom: insets.bottom }]}>
+    <View
+      style={[
+        styles.bar,
+        { paddingBottom: insets.bottom },
+        tinggiKeyboard > 0 && {
+          transform: [{ translateY: tinggiKeyboard }],
+        },
+      ]}
+    >
       {state.routes.map((route, index) => {
         const isFocused = state.index === index;
         const badge = badgeByRoute[route.name] ?? 0;

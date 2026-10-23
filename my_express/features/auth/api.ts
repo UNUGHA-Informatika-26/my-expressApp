@@ -25,3 +25,14 @@ export async function updateProfile(input: UpdateProfileValues): Promise<User> {
   const { data } = await api.put<ProfileResponse>('/api/profile', input);
   return data.data;
 }
+
+/**
+ * DELETE /api/profile — hapus akun beserta seluruh datanya.
+ *
+ * Hanya kata sandi yang dikirim. Bila salah, server menjawab 401 dan axios
+ * melempar error sehingga pemanggil cukup menangkapnya lewat getErrorMessage.
+ * Sesudah sukses token sudah tidak berlaku — pemanggil wajib menghapus sesi.
+ */
+export async function deleteProfile(password: string): Promise<void> {
+  await api.delete('/api/profile', { data: { password } });
+}

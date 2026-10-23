@@ -29,10 +29,24 @@ function resolveBaseUrl(): string {
   );
 }
 
-/** Instance axios untuk memanggil backend my_express_api. */
+/**
+ * Instance axios untuk memanggil backend my_express_api.
+ *
+ * `timeout` 90 detik, bukan 15 seperti lazimnya, karena backend dipasang di
+ * Render paket GRATIS yang menidurkan layanannya setelah 15 menit tidak ada
+ * permintaan. Saat dibangunkan, Render butuh 30-60 detik sebelum sanggup
+ * menjawab. Dengan batas 15 detik, request pertama PASTI gagal padahal
+ * server sebentar lagi siap — pengguna melihat "Koneksi ke server terlalu
+ * lama" dan mengira aplikasinya rusak.
+ *
+ * Nilai ini jaring pengaman, bukan hal yang biasa terasa: selama pemantik
+ * mengetuk /health tiap beberapa menit, Render tidak pernah tidur dan
+ * pengguna tidak pernah menunggu. 90 detik hanya dipakai saat Render kebetulan
+ * tertidur, misalnya pemantiknya sendiri sedang mati.
+ */
 export const api = axios.create({
   baseURL: resolveBaseUrl(),
-  timeout: 15000,
+  timeout: 90_000,
 });
 
 // Sisipkan token login ke setiap request yang butuh autentikasi.
