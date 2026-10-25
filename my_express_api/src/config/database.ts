@@ -1,6 +1,15 @@
 import { config as loadEnv } from 'dotenv';
 import { Sequelize } from 'sequelize';
 
+/**
+ * Impor statis 'pg' — satu-satunya tujuannya supaya pembundler serverless
+ * (Vercel/node-file-trace) melacak paket ini. Sequelize memuat driver dengan
+ * require bernama variabel yang tidak terlacak, sehingga tanpa impor ini
+ * fungsi di Vercel gagal dengan "Please install pg package manually".
+ * Tidak dipakai langsung di sini; secara lokal tidak merubah apa pun.
+ */
+import 'pg';
+
 loadEnv();
 
 const databaseUrl = process.env.DATABASE_URL;
