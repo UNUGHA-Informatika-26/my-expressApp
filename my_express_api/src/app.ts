@@ -57,3 +57,9 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   console.error(error);
   res.status(500).json({ message: 'Terjadi kesalahan pada server' });
 });
+
+// Default export — wajib untuk Vercel (zero-config Express): platform memuat
+// src/app lebih dulu lalu menuntut aplikasi diekspor sebagai default export
+// atau lewat app.listen. Tanpa baris ini deploy gagal dengan
+// "Invalid export found in module". Lokal (npm run dev) tetap memakai server.ts.
+export default app;
