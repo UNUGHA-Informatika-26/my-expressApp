@@ -27,4 +27,28 @@ export const sequelize = new Sequelize(databaseUrl, {
   timezone: '+07:00',
   logging: false,
   ...(needsSsl ? { dialectOptions: { ssl: { require: true } } } : {}),
+  /**
+   * Pengaturan kolam koneksi, disetel untuk Postgres TERKELOLA yang jauh
+   * dari server (Neon di Singapore), bukan Postgres di mesin sendiri.
+   *
+   * - `acquire: 30 detik` — batas waktu mengambil koneksi. Bawaan Sequelize
+   *   10 detik terlalu sempit: saat mesin Neon baru dinyalakan setelah tidur,
+   *   membuka koneksi butuh waktu lebih lama, dan permintaan pengguna akan
+   *   gagal padahal sebentar lagi pasti berhasil. Memberi waktu berarti
+   *   pengguna menunggu sebentar, bukan melihat error.
+   * - `idle: 30 detik` — koneksi yang menganggur ditutup setelah 30 detik.
+   *   Nilai ini yang membuat kembali dari diam tidak membuka tumpukan
+   *   koneksi lama yang kondisinya sudah tidak pasti.
+   * - `min: 0` — sengaja dibiarkan nol supaya kolam benar-benar mengosongkan
+   *   diri; menahan koneksi tetap terbuka justru memancing layanan kelolaan
+   *   memutusnya secara sepihak.
+   * - `max: 5` — cukup untuk aplikasi satu toko; menaikkannya tidak menambah
+   *   kecepatan dan mendekatkan batas koneksi paket gratis.
+   */
+  pool: {
+    max: 5,
+    min: 0,
+    idle: 30_000,
+    acquire: 30_000,
+  },
 });

@@ -1,7 +1,13 @@
+import bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
+import { sequelize } from '../config/database';
+import { Debt } from '../models/Debt';
+import { Distributor } from '../models/Distributor';
+import { Product } from '../models/Product';
+import { Transaction } from '../models/Transaction';
 import { User } from '../models/User';
 import { toPublicUser } from '../types/PublicUser';
-import type { UpdateProfileInput } from '../validators/auth.schemas';
+import type { DeleteProfileInput, UpdateProfileInput } from '../validators/auth.schemas';
 
 /**
  * GET /api/profile
@@ -51,4 +57,58 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
   });
 
   res.json({ data: toPublicUser(user) });
+}
+
+/**
+ * DELETE /api/profile
+ * 200 → akun beserta seluruh datanya terhapus
+ * 401 → kata sandi salah
+ * 404 → pengguna tidak ditemukan (token masih berlaku padahal akunnya sudah hilang)
+ *
+ * Tiga hal yang tidak boleh dilupakan:
+ *
+ * 1. `User.scope('withPassword')` — model memakai `defaultScope` yang
+ *    MENGECUALIKAN `passwordHash`, jadi `findByPk` biasa tidak membawa hash
+ *    untuk dibandingkan.
+ * 2. Verifikasi sandi dijalankan SEBELUM ada baris yang disentuh. Bila sandi
+ *    salah, tidak ada satu pun query penghapusan yang sempat berjalan.
+ * 3. Urutan penghapusan menyesuaikan kenyataan bahwa TIDAK ADA foreign key
+ *    yang menunjuk `users.id` (lihat 03-database.md), sehingga pemusnahan harus
+ *    diurutkan sendiri — dan semuanya dalam SATU transaksi, jadi bila satu
+ *    tahap gagal seluruhnya batal dan akun tidak setengah terhapus.
+ *
+ * Urutannya penting: `transactions` dulu supaya `transaction_items` ikut
+ * `CASCADE`; `debts` sebelum `distributors` karena `debts.distributor_id`
+ * memakai `ON DELETE SET NULL` (bila distributor duluan, hutang kehilangan
+ * referensinya sebelum ikut terhapus).
+ */
+export async function deleteProfile(req: Request, res: Response): Promise<void> {
+  const input = req.body as DeleteProfileInput;
+
+  const user = await User.scope('withPassword').findByPk(req.userId);
+  if (!user) {
+    res.status(404).json({ message: 'Pengguna tidak ditemukan' });
+    return;
+  }
+
+  const match = await bcrypt.compare(input.password, user.passwordHash);
+  if (!match) {
+    res.status(401).json({
+      message: 'Kata sandi salah',
+      errors: [{ field: 'password', message: 'Kata sandi salah' }],
+    });
+    return;
+  }
+
+  const userId = user.id;
+
+  await sequelize.transaction(async (t) => {
+    await Transaction.destroy({ where: { userId }, transaction: t });
+    await Debt.destroy({ where: { userId }, transaction: t });
+    await Distributor.destroy({ where: { userId }, transaction: t });
+    await Product.destroy({ where: { userId }, transaction: t });
+    await User.destroy({ where: { id: userId }, transaction: t });
+  });
+
+  res.json({ message: 'Akun berhasil dihapus' });
 }

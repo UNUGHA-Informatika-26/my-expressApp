@@ -43,3 +43,18 @@ export const updateProfileSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+/**
+ * Hapus akun (DELETE /profile).
+ *
+ * Kata sandi sengaja TIDAK memakai `passwordSchema` — cukup wajib terisi.
+ * Alasannya sama seperti `loginSchema`: sandi lama di database bisa saja dibuat
+ * sebelum aturan 8 karakter ada, dan orang justru harus tetap bisa menghapus
+ * akunnya. Kecocokan sandi diverifikasi controller terhadap hash di database,
+ * bukan oleh bentuk isinya.
+ */
+export const deleteProfileSchema = z.object({
+  password: z.string().min(1, 'Kata sandi wajib diisi'),
+});
+
+export type DeleteProfileInput = z.infer<typeof deleteProfileSchema>;
