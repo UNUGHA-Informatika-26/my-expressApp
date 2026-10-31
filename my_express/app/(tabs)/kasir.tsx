@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
+  KeyboardAvoidingView,
   Pressable,
   StyleSheet,
   Text,
@@ -143,7 +144,12 @@ export default function KasirScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    /* Panel uang diterima dan tombol Bayar menempel di dasar layar. Bila
+       keyboard dibuka, jendela Android memang mengecil, tetapi tidak semua
+       perangkat melakukannya saat edge-to-edge; `padding` hanya menambah
+       ruang sebesar bagian yang benar-benar tertutup (0 bila jendela sudah
+       mengecil), jadi panel tetap terlihat di kedua kondisi. */
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <Tabs.Screen
         options={{
           headerTitle: () => (
@@ -260,7 +266,7 @@ export default function KasirScreen() {
           />
         </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

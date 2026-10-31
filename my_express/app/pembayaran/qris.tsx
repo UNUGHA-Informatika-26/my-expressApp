@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { useCheckout } from '../../features/checkout/queries';
@@ -37,6 +38,10 @@ export default function PembayaranQRISScreen() {
   const total = totalCart(items);
   const checkout = useCheckout();
   const [submitting, setSubmitting] = useState(false);
+  /* Layar ini tidak memakai tab bar, jadi tepi bawah layar adalah nav bar
+     sistem. Inset ditambahkan ke jarak bawaan footer agar tombol "Batal"
+     tidak tertutup. */
+  const insets = useSafeAreaInsets();
 
   const onConfirm = () => {
     if (items.length === 0) {
@@ -130,7 +135,7 @@ export default function PembayaranQRISScreen() {
         </Card>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: qris.spacing.bottom + insets.bottom }]}>
         <Button
           label="Pembayaran diterima"
           icon="checkmark-circle"

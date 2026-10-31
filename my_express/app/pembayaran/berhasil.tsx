@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Receipt } from '../../components/Receipt';
@@ -55,6 +56,9 @@ export default function PembayaranBerhasilScreen() {
 
   const id = params.id ?? '';
   const transactionQuery = useTransaction(id);
+  /* Empat tombol di footer adalah ujung layar. Tanpa inset bawah, tombol
+     "Transaksi baru" tertutup nav bar sistem (layar ini di luar tab bar). */
+  const insets = useSafeAreaInsets();
   const transaction = transactionQuery.data;
 
   // Kepala struk: nama toko dan telepon dari sesi login, kasir = nama pemilik.
@@ -143,7 +147,7 @@ export default function PembayaranBerhasilScreen() {
         ) : null}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: 28 + insets.bottom }]}>
         <Button label="Bagikan struk" onPress={() => void onShare()} disabled={!transaction} />
         {/* TODO: ganti menjadi tombol aktif ketika printer thermal sudah terhubung. */}
         <Button label="Cetak struk" onPress={onPrint} disabled />

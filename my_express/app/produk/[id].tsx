@@ -1,5 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { ProductForm } from '../../features/catalog/ProductForm';
 import type { ProductPayload } from '../../features/catalog/validation';
@@ -16,6 +17,9 @@ import { formatRupiah } from '../../lib/format';
 export default function ProdukDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
+  /* Sama seperti layar Produk Baru: tanpa inset bawah, tombol "Hapus Produk"
+     yang ada di ujung gulir tertutup nav bar sistem. */
+  const insets = useSafeAreaInsets();
 
   const productQuery = useProduct(id, id.length > 0);
   const updateMutation = useUpdateProduct();
@@ -92,38 +96,44 @@ export default function ProdukDetailScreen() {
           headerTitleStyle: { color: '#111827' },
         }}
       />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.summary}>
-          <Text style={styles.summaryLabel}>Harga saat ini</Text>
-          <Text style={styles.summaryValue}>{formatRupiah(product.price)}</Text>
-        </View>
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: 16 + insets.bottom }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.summary}>
+            <Text style={styles.summaryLabel}>Harga saat ini</Text>
+            <Text style={styles.summaryValue}>{formatRupiah(product.price)}</Text>
+          </View>
 
-        <ProductForm
-          key={product.id}
-          defaultValues={{
-            barcode: product.barcode,
-            name: product.name,
-            category: product.category,
-            satuan: product.satuan,
-            price: String(product.price),
-            stock: String(product.stock),
-            minStock: String(product.minStock),
-          }}
-          submitLabel="Simpan Perubahan"
-          onSubmit={onSubmit}
-          submitting={updateMutation.isPending}
-        />
+          <ProductForm
+            key={product.id}
+            defaultValues={{
+              barcode: product.barcode,
+              name: product.name,
+              category: product.category,
+              satuan: product.satuan,
+              price: String(product.price),
+              stock: String(product.stock),
+              minStock: String(product.minStock),
+            }}
+            submitLabel="Simpan Perubahan"
+            onSubmit={onSubmit}
+            submitting={updateMutation.isPending}
+          />
 
-        <View style={styles.deleteWrap}>
-          <Button label="Hapus Produk" onPress={onDelete} variant="danger" loading={deleteMutation.isPending} />
-        </View>
-      </ScrollView>
+          <View style={styles.deleteWrap}>
+            <Button label="Hapus Produk" onPress={onDelete} variant="danger" loading={deleteMutation.isPending} />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: navy.background },
+  flex: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: navy.background, padding: 24, gap: 16 },
   content: { padding: 16 },
   summary: {

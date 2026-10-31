@@ -1,5 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProductForm, EMPTY_PRODUCT_VALUES } from '../../features/catalog/ProductForm';
 import { useCreateProduct } from '../../features/catalog/queries';
 import { getErrorMessage } from '../../lib/api';
@@ -12,6 +13,10 @@ import { navy } from '../../lib/theme';
 export default function ProdukBaruScreen() {
   const params = useLocalSearchParams<{ barcode?: string }>();
   const scannedBarcode = typeof params.barcode === 'string' ? params.barcode : '';
+  /* Layar ini berada di luar tab bar, jadi tepi bawah layar adalah batas
+     fisik HP (gesture bar / tombol nav). Tanpa inset ini tombol "Simpan
+     Produk" tertutup dan tidak bisa digulir sampai terlihat. */
+  const insets = useSafeAreaInsets();
 
   const createMutation = useCreateProduct();
 
@@ -40,20 +45,26 @@ export default function ProdukBaruScreen() {
           headerTitleStyle: { color: '#111827' },
         }}
       />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <ProductForm
-          key={scannedBarcode || 'kosong'}
-          defaultValues={{ ...EMPTY_PRODUCT_VALUES, barcode: scannedBarcode }}
-          submitLabel="Simpan Produk"
-          onSubmit={onSubmit}
-          submitting={createMutation.isPending}
-        />
-      </ScrollView>
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: 16 + insets.bottom }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <ProductForm
+            key={scannedBarcode || 'kosong'}
+            defaultValues={{ ...EMPTY_PRODUCT_VALUES, barcode: scannedBarcode }}
+            submitLabel="Simpan Produk"
+            onSubmit={onSubmit}
+            submitting={createMutation.isPending}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: navy.background },
+  flex: { flex: 1 },
   content: { padding: 16 },
 });

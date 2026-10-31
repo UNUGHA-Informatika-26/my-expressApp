@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ATK Express",
+    "name": "My Express",
     "slug": "my_express",
     "version": "1.0.0",
     "scheme": "myexpress",
@@ -37,7 +37,23 @@
         }
       ],
       "expo-sharing",
-      "expo-font"
-    ]
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "imageWidth": 240,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6d43bcd7-1bbd-4d2b-a560-a844a277d266"
+      }
+    },
+    "owner": "emaliaa29"
   }
 }
